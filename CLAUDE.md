@@ -54,4 +54,4 @@
 新しいリポジトリを作成する際は、必ず上記の命名規則に従うこと。
 命名に迷った場合は `/repo-naming` スキル（claude-skillsリポに格納）を使用してチェックする。
 
-詳細な命名規則ドキュメント: [claude-skills/repo-naming/github-naming-convention.md](https://github.com/torihada-biz/claude-skills/blob/main/repo-naming/github-naming-convention.md)
+詳細な命名規則ドキュメント: [doc-claude-skills-dev/repo-naming/github-naming-convention.md](https://github.com/torihada-biz/doc-claude-skills-dev/blob/main/repo-naming/github-naming-convention.md)
