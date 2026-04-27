@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 # 同一PRへの複数pushが来た場合、前のジョブをキャンセル
 concurrency:
