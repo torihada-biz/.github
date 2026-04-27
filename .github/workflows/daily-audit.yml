@@ -50,7 +50,7 @@ jobs:
 
       - name: Audit naming
         env:
-          GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN2 }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             # 手動 dry-run: 検知のみ（Issue/リネーム実行しない）
@@ -85,7 +85,7 @@ jobs:
 
       - name: Run readme audit
         env:
-          GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN2 }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             # 手動 dry-run: 検知のみ（PR 作成しない）
