@@ -484,6 +484,10 @@ def main() -> int:
     org: str = args.org
     dry_run: bool = args.dry_run
 
+    # PAT を git の credential helper として登録（private repo の clone/push に必要）
+    if not dry_run:
+        _run_gh(["auth", "setup-git"], check=False)
+
     print(f"[audit-readme] 組織: {org} のリポジトリを取得中...")
     repos = fetch_repos(org)
     print(f"[audit-readme] 取得完了: {len(repos)} リポジトリ")
