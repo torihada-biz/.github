@@ -1,0 +1,8 @@
+{
+  "name": "Update README Auto-Sections",
+  "description": "README.md 内の AUTO マーカーを自動更新します（LAST_UPDATED / STRUCTURE / SCRIPTS / BADGES）。push と PR の両方に対応しています。",
+  "iconName": "octicon book",
+  "categories": [
+    "Continuous integration"
+  ]
+}

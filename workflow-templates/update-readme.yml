@@ -1,0 +1,30 @@
+name: Update README
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# 同一PRへの複数pushが来た場合、前のジョブをキャンセル
+concurrency:
+  group: readme-update-${{ github.ref }}
+  cancel-in-progress: true
+
+# 必須: Settings > Actions > General > Workflow permissions = "Read and write" が必要
+# （または fine-grained token で contents:write + pull-requests:write を付与）
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: torihada-biz/.github/actions/update-readme@main

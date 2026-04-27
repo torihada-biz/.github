@@ -1,0 +1,87 @@
+name: 'Update README Auto-Sections'
+description: >
+  README.md 内の <!-- AUTO:XXX:START/END --> マーカーを自動更新する。
+  LAST_UPDATED / STRUCTURE / SCRIPTS / BADGES の4セクションに対応。
+  torihada-biz の全リポジトリから uses: torihada-biz/.github/actions/update-readme@main で呼び出す。
+
+author: 'torihada-biz'
+
+inputs:
+  python-version:
+    description: 'Python バージョン（setup-python@v5 に渡す）'
+    required: false
+    default: '3.11'
+  commit-message:
+    description: 'README 更新時のコミットメッセージ'
+    required: false
+    default: 'docs: auto-update README sections [skip ci]'
+  readme-path:
+    description: 'README ファイルのパス（リポジトリルートからの相対パス）'
+    required: false
+    default: 'README.md'
+
+outputs:
+  readme_changed:
+    description: 'README に変更があった場合 "true"、なければ "false"'
+    value: ${{ steps.update_readme.outputs.readme_changed }}
+  changed_sections:
+    description: '更新されたセクション名のカンマ区切りリスト'
+    value: ${{ steps.update_readme.outputs.changed_sections }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Run update_readme.py
+      id: update_readme
+      shell: bash
+      run: |
+        python "${{ github.action_path }}/update_readme.py" \
+          --readme "${{ inputs.readme-path }}" \
+          --repo-root "."
+      env:
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
+
+    # -----------------------------------------------------------
+    # push トリガー: 変更があれば main に直接コミット
+    # -----------------------------------------------------------
+    - name: Commit & push (push to main)
+      if: |
+        github.event_name == 'push' &&
+        steps.update_readme.outputs.readme_changed == 'true'
+      shell: bash
+      run: |
+        git config user.name  "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add "${{ inputs.readme-path }}"
+        git commit -m "${{ inputs.commit-message }}"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+
+    # -----------------------------------------------------------
+    # PR トリガー: 変更があれば PR ブランチに追加コミット
+    # -----------------------------------------------------------
+    - name: Commit & push to PR branch
+      if: |
+        github.event_name == 'pull_request' &&
+        steps.update_readme.outputs.readme_changed == 'true'
+      shell: bash
+      run: |
+        git config user.name  "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add "${{ inputs.readme-path }}"
+        git commit -m "${{ inputs.commit-message }}"
+        git push origin HEAD:${{ github.head_ref }}
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+
+    - name: No changes
+      if: steps.update_readme.outputs.readme_changed != 'true'
+      shell: bash
+      run: echo "[update-readme] README に変更はありませんでした（冪等）"
