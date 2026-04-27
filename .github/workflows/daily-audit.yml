@@ -1,0 +1,99 @@
+name: Daily Repository Audit
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # UTC 10:00 = JST 19:00
+    # cron 実行時はリネーム + README PR 作成を自動実行（apply モード）
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'ドライラン（Issue/PR を作成しない）'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      apply_rename:
+        description: '命名違反の自動リネームを実行する（破壊的・cronもデフォルトON）'
+        type: boolean
+        default: true
+      apply_readme:
+        description: 'README欠如リポへのPR作成を実行する（cronもデフォルトON）'
+        type: boolean
+        default: true
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+env:
+  ORG: torihada-biz
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: 命名規則違反チェック → Issue 作成 / --apply でリネーム実行
+  # ---------------------------------------------------------------------------
+  audit-naming:
+    name: Audit Repository Naming
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout .github repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Audit naming
+        env:
+          GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            # 手動 dry-run: 検知のみ（Issue/リネーム実行しない）
+            python scripts/audit_repo_naming.py --org "${{ env.ORG }}" --dry-run
+          elif [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply_rename }}" = "true" ]; then
+            # cron 実行 or 手動（apply_rename=true）→ 自動リネーム実行
+            python scripts/audit_repo_naming.py --org "${{ env.ORG }}" --apply
+          else
+            # 手動（apply_rename=false）→ 提案モード（Issue 作成のみ・リネームなし）
+            python scripts/audit_repo_naming.py --org "${{ env.ORG }}"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Job 2: README 欠如チェック → PR 作成
+  # ---------------------------------------------------------------------------
+  audit-readme:
+    name: Audit README Existence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout .github repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run readme audit
+        env:
+          GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            # 手動 dry-run: 検知のみ（PR 作成しない）
+            python scripts/audit_repo_readme.py --org "${{ env.ORG }}" --dry-run
+          elif [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply_readme }}" = "true" ]; then
+            # cron 実行 or 手動（apply_readme=true）→ PR 作成実行
+            python scripts/audit_repo_readme.py --org "${{ env.ORG }}"
+          else
+            # 手動（apply_readme=false）→ 提案ドライラン（PR 作成しない）
+            python scripts/audit_repo_readme.py --org "${{ env.ORG }}" --dry-run
+          fi
